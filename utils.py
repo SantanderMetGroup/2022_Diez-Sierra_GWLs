@@ -102,7 +102,8 @@ def decadal_anomalies(basedir, project, period, scenario, Reg_CORDEX_dom, months
         res = data.set_index(['GCM', 'run', 'decade'])
     return res
 
-def GWL_function(root, variable, mask, project, project_gsat, scenario, region, season, period_PI, period_CP, relative, Reg_CORDEX_dom, months):
+def GWL_function(root, variable, mask, project_gsat, scenario, region, season, period_PI, period_CP, Reg_CORDEX_dom, months, 
+                 project = 'CMIP5', relative = False):
     
     data_path = 'datasets-aggregated-regionally/data/'
     
@@ -369,7 +370,7 @@ def robustness_IPCC(data, region, project, variable, mask, root, CORDEX_regions)
                 
     return color
 
-def main(root, variable, mask, project_gsat, scenario, region, season, period_PI, period_CP):
+def main(root, variable, mask, scenario, region, season, period_PI, period_CP):
 
     # Mosaic-ensemble approach used in the IPCC-WGI AR6 (Diez-Sierra et al., 2022, see Figure 1 panel b)
     Reg_CORDEX_dom = {'NAM' : ['NWN', 'NEN', 'WNA', 'CNA', 'ENA'],
@@ -388,10 +389,16 @@ def main(root, variable, mask, project_gsat, scenario, region, season, period_PI
     units = dict(pr='%', tas='K')
     months = dict(DJF=[1,2,12], MAM=[3,4,5], JJA=[6,7,8], SON=[9,10,11], Annual=range(1,13))
 
-    data_CMIP5_CMIP5_relative = GWL_function(root, variable, mask, 'CMIP5', project_gsat, scenario, region, season, period_PI, period_CP, True, Reg_CORDEX_dom, months)
-    data_CORDEX_CMIP5_relative = GWL_function(root, variable, mask, 'CORDEX', project_gsat, scenario, region, season, period_PI, period_CP, True, Reg_CORDEX_dom, months)
-    data_CMIP5_CMIP5 = GWL_function(root, variable, mask, 'CMIP5', project_gsat, scenario, region, season, period_PI, period_CP, False, Reg_CORDEX_dom, months)
-    data_CORDEX_CMIP5 = GWL_function(root, variable, mask, 'CORDEX', project_gsat, scenario, region, season, period_PI, period_CP, False, Reg_CORDEX_dom, months)
+    project_gsat = 'CMIP5'
+
+    data_CMIP5_CMIP5_relative = GWL_function(root, variable, mask, project_gsat, scenario, region, season, period_PI, period_CP, Reg_CORDEX_dom, months, 
+                                project = 'CMIP5', relative = True)
+    data_CORDEX_CMIP5_relative = GWL_function(root, variable, mask, project_gsat, scenario, region, season, period_PI, period_CP, Reg_CORDEX_dom, months, 
+                                project = 'CORDEX', relative = True)
+    data_CMIP5_CMIP5 = GWL_function(root, variable, mask, project_gsat, scenario, region, season, period_PI, period_CP, Reg_CORDEX_dom, months, 
+                                project = 'CMIP5', relative = False)
+    data_CORDEX_CMIP5 = GWL_function(root, variable, mask, project_gsat, scenario, region, season, period_PI, period_CP, Reg_CORDEX_dom, months, 
+                                project = 'CORDEX', relative = False)
 
     # selecting commun CORDEX-CMIP5 simulations
     data_CMIP5_CMIP5_relative_common = select_GCM_from_CORDEX(data_CMIP5_CMIP5_relative, data_CORDEX_CMIP5_relative)

@@ -34,7 +34,7 @@
 
     "license": "CC-BY-4.0",
 
-    "title": "Regional response to global warming from CMIP5 global climate models and CORDEX downscaled projections",
+    "title": "Regional response to global warming levels from CMIP5 and CORDEX projections",
     
     "description": "<p>Script to assess the consistency of regional responses to global warming from global (CMIP5) and regional (CORDEX) projections. In addition, the entire collection of GWL plots calculated over the new IPCC WGI Reference Regions v4 are also provided here. The dataset aggregated regionally available on the IPCC-WGI Atlas repository was used as the input/reference dataset ensuring total reproducibility. These results might be very useful as preliminary analysis for regional climate change studies. .</p>",
 

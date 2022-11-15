@@ -1,3 +1,8 @@
+
+
+[![DOI](https://zenodo.org/badge/504092617.svg)](https://zenodo.org/badge/latestdoi/504092617)
+
+
 # 2022_Diez-Sierra_GWLs
 This repo contains the script to reproduce main figures of the paper **Consistency of regional response to global warming levels from CMIP5 and CORDEX projections**. In addition, the entire collection of **GWL plots** calculated over the new **IPCC WGI Reference Regions v4 [1]** are also provided here. The dataset aggregated regionally available on the **IPCC-WGI Atlas repository [2]** was used as the input/reference dataset ensuring total reproducibility. These results might be very useful as preliminary analysis for regional climate change studies. **This work is licensed under a Creative Commons Attribution 4.0 International License**.
 

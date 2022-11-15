@@ -207,7 +207,7 @@ def picture(data_CMIP5_CMIP5, data_CORDEX_CMIP5, data_CMIP5_CMIP5_relative, data
     if p_value<=0.01: sig = '(**)'
     elif (p_value>0.01) and  (p_value<=0.05): sig = '(*)'
     else: sig = ''
-    ax[0].text(0.05, 0.92, '$\\beta:$ %.2f %s/K%s\n$R^2:$ %4.2f' % (model.coef_, units[variable], sig, lm.score(X, y)), color='k',
+    ax[0].text(0.05, 0.92, '$\\beta:$ %.2f %s/\u00b0C%s' % (model.coef_, units[variable], sig), color='k',
             verticalalignment='top', horizontalalignment='left', transform=ax[0].transAxes, 
             fontsize=13, fontweight = 'bold', bbox={'facecolor': 'w', 'alpha': 0.5, 'pad': 5}, zorder=50)
     ax[0].plot(X, model.predict(X), color = 'k', linewidth = 2)
@@ -225,7 +225,7 @@ def picture(data_CMIP5_CMIP5, data_CORDEX_CMIP5, data_CMIP5_CMIP5_relative, data
     ax[0].set_axisbelow(True)
     ax[0].grid()
     #ax[0].axline((1, 1), slope=1, ls="--", c="k", zorder = 5)
-    ax[0].set_xlabel(f'{project_gsat} GWL (K)')
+    ax[0].set_xlabel(f'GWL (\u00b0C)')
     ax[0].set_ylabel(f'{season} {variable} ({units[variable]}) Region: {region}')
 
     if variable == 'tas': data = data_CORDEX_CMIP5.dropna(axis=0)
@@ -253,7 +253,7 @@ def picture(data_CMIP5_CMIP5, data_CORDEX_CMIP5, data_CMIP5_CMIP5_relative, data
     if p_value<=0.01: sig = '(**)'
     elif (p_value>0.01) and (p_value<=0.05): sig = '(*)'
     else: sig = ''
-    ax[1].text(0.05, 0.92, '$\\beta:$ %.2f %s/K%s\n$R^2:$ %4.2f' % (model.coef_, units[variable], sig, lm.score(X, y)), color='k',
+    ax[1].text(0.05, 0.92, '$\\beta:$ %.2f %s/\u00b0C%s' % (model.coef_, units[variable], sig), color='k',
             verticalalignment='top', horizontalalignment='left', transform=ax[1].transAxes, 
             fontsize=13, fontweight = 'bold', bbox={'facecolor': 'w', 'alpha': 0.5, 'pad': 5}, zorder=50)
     ax[1].plot(X, model.predict(X), color = 'k', linewidth = 2)
@@ -270,7 +270,7 @@ def picture(data_CMIP5_CMIP5, data_CORDEX_CMIP5, data_CMIP5_CMIP5_relative, data
     # Grid and labels
     ax[1].set_axisbelow(True)
     ax[1].grid()
-    ax[1].set_xlabel(f'{project_gsat} GWL (K)')
+    ax[1].set_xlabel(f'GWL (\u00b0C)')
     
     h_sig = []
     h_sig.append(plt.scatter(x=8, y=1, s = 40, c = 'w', marker = 's', edgecolors='k', linewidths=1, hatch=6*'x', zorder=100))
@@ -342,7 +342,7 @@ def robustness_IPCC(data, region, project, variable, mask, root, CORDEX_regions)
         data_hist_annual_mean = data_hist.resample('y').mean()
         # detrending
         data_hist_annual_mean_detrend = signal.detrend(data_hist_annual_mean[region].values)
-        th_v = np.sqrt(2)*1.645*data_hist_annual_mean_detrend.std()/np.sqrt(20)
+        th_v = np.sqrt(2)*1.645*data_hist_annual_mean_detrend.std()/np.sqrt(10)
         if abs(data[region].iloc[n_model])>th_v:
             data_robust[region + '_robust'].iloc[n_model] = 1
     
@@ -386,7 +386,7 @@ def main(root, variable, mask, scenario, region, season, period_PI, period_CP):
                       'AUS' : ['NAU', 'CAU', 'EAU', 'SAU', 'NZ']}
 
     longname = dict(pr = 'Precipitation', tas = 'Near surface temperature')
-    units = dict(pr='%', tas='K')
+    units = dict(pr='%', tas='\u00b0C')
     months = dict(DJF=[1,2,12], MAM=[3,4,5], JJA=[6,7,8], SON=[9,10,11], Annual=range(1,13))
 
     project_gsat = 'CMIP5'

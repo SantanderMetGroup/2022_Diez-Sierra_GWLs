@@ -38,5 +38,5 @@
     
     "description": "<p>Script to reproduce main figures of the paper -Consistency of regional response to global warming levels from CMIP5 and CORDEX projections-. In addition, the entire collection of GWL plots calculated over the new IPCC WGI Reference Regions v4 are also provided here. The dataset aggregated regionally available on the IPCC-WGI Atlas repository was used as the input/reference dataset ensuring total reproducibility. These results might be very useful as preliminary analysis for regional climate change studies. .</p>",
 
-    "keywords": ["CORDEX", "IPCC-WGI", "AR6", "Atlas"]
+    "keywords": ["CORDEX", "IPCC-AR6 WGI", "Interactive Atlas"]
 }

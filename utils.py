@@ -54,12 +54,19 @@ def get_regional_model(filepath, project):
     '''Extracts regional model name and version from filename'''
     return filepath.split('/')[-1].split('_')[3] + "_" + filepath.split('/')[-1].split('_')[4].split('.')[0]
 
-def decadal_anomalies(basedir, project, period, scenario, Reg_CORDEX_dom, months, region = 'world', season = 'Annual', relative = False):
+def decadal_anomalies(basedir, project, period, scenario, Reg_CORDEX_dom, months, scenario_common, region = 'world', season = 'Annual', relative = False):
     data = pd.DataFrame(columns = ['GCM', 'run', 'decade', region])
     if project == 'CORDEX':
         files_scen = glob.glob(f'{basedir}/*_{scenario}*.csv')
     else:
         files_scen = glob.glob(f'{basedir}/{project}_*_{scenario}*.csv')
+    if scenario_common == True:
+        if scenario == 'rcp85':
+            files_scen_rcp45 = glob.glob(f'{basedir}/*_rcp45*.csv')
+            files_scen = [file_scen for file_scen in files_scen if file_scen.replace(scenario, 'rcp45') in files_scen_rcp45]
+        elif scenario == 'rcp45':
+            files_scen_rcp85 = glob.glob(f'{basedir}/*_rcp85*.csv')
+            files_scen = [file_scen for file_scen in files_scen if file_scen.replace(scenario, 'rcp85') in files_scen_rcp85]
 
     for scenfile in files_scen:
         histfile = scenfile.replace(scenario, 'historical')
@@ -102,7 +109,7 @@ def decadal_anomalies(basedir, project, period, scenario, Reg_CORDEX_dom, months
         res = data.set_index(['GCM', 'run', 'decade'])
     return res
 
-def GWL_function(root, variable, mask, project_gsat, scenario, region, season, period_PI, period_CP, Reg_CORDEX_dom, months, 
+def GWL_function(root, variable, mask, project_gsat, scenario, region, season, period_PI, period_CP, Reg_CORDEX_dom, months, scenario_common, 
                  project = 'CMIP5', relative = False):
     
     data_path = 'datasets-aggregated-regionally/data/'
@@ -113,8 +120,8 @@ def GWL_function(root, variable, mask, project_gsat, scenario, region, season, p
         basedir = root + data_path + project + '/' +  project + '_' + variable + '_' +  mask
     basedir_gsat = root + data_path + project_gsat + '/' +  project_gsat + '_tas_' + mask
     
-    ydata = decadal_anomalies(basedir, project, period_CP, scenario, Reg_CORDEX_dom, months, region, season, relative = relative)
-    xdata = decadal_anomalies(basedir_gsat, project_gsat, period_PI, scenario, Reg_CORDEX_dom, months)
+    ydata = decadal_anomalies(basedir, project, period_CP, scenario, Reg_CORDEX_dom, months, scenario_common, region, season, relative = relative)
+    xdata = decadal_anomalies(basedir_gsat, project_gsat, period_PI, scenario, Reg_CORDEX_dom, months, scenario_common)
 
     if project == 'CORDEX':
         pos_GCM_x = [n for n, name in enumerate(xdata.index.names) if name == 'GCM'][0]
@@ -170,7 +177,7 @@ def GWL_function(root, variable, mask, project_gsat, scenario, region, season, p
 def picture(data_CMIP5_CMIP5, data_CORDEX_CMIP5, data_CMIP5_CMIP5_relative, data_CORDEX_CMIP5_relative,
             data_CMIP5_CMIP5_no_common,
             region, variable, project_gsat, season, mask, path_ATLAS, 
-            Reg_CORDEX_dom, units, longname):
+            Reg_CORDEX_dom, units, longname, GWL_limit, scenario, dest_figure, show_figure):
             
     fig, ax = plt.subplots(1, 2, figsize=(10,4), sharex=True, sharey=True)
     
@@ -199,15 +206,17 @@ def picture(data_CMIP5_CMIP5, data_CORDEX_CMIP5, data_CMIP5_CMIP5_relative, data
     col = robustness_IPCC(data_CMIP5_CMIP5.dropna(axis=0), region, 'CMIP5', variable, mask, path_ATLAS, Reg_CORDEX_dom)
     # Add linear fit
     lm = linear_model.LinearRegression()
-    slope, intercept, r_value, p_value, std_err = stats.linregress(data['world'].values,data[region])
     X = data['world'].values.reshape(-1, 1)
     y = data[region]
+    slope, intercept, r_value, p_value, std_err = stats.linregress(data['world'].values,data[region])
+    slope_CMIP5 = slope.copy()
+    pvalue_CMIP5 = p_value.copy()
     model = lm.fit(X, y)
     ax[0].set_xlim(left=0)
     if p_value<=0.01: sig = '(**)'
     elif (p_value>0.01) and  (p_value<=0.05): sig = '(*)'
     else: sig = ''
-    ax[0].text(0.05, 0.92, '$\\beta:$ %.2f %s/\u00b0C%s' % (model.coef_, units[variable], sig), color='k',
+    ax[0].text(0.05, 0.92, '$\\beta:$ %s %s/\u00b0C%s' % (str(np.round(slope,2)), units[variable], sig), color='k',
             verticalalignment='top', horizontalalignment='left', transform=ax[0].transAxes, 
             fontsize=13, fontweight = 'bold', bbox={'facecolor': 'w', 'alpha': 0.5, 'pad': 5}, zorder=50)
     ax[0].plot(X, model.predict(X), color = 'k', linewidth = 2)
@@ -226,7 +235,7 @@ def picture(data_CMIP5_CMIP5, data_CORDEX_CMIP5, data_CMIP5_CMIP5_relative, data
     ax[0].grid()
     #ax[0].axline((1, 1), slope=1, ls="--", c="k", zorder = 5)
     ax[0].set_xlabel(f'GWL (\u00b0C)')
-    ax[0].set_ylabel(f'{season} {variable} ({units[variable]}) Region: {region}')
+    ax[0].set_ylabel(f'{season} {scenario} {variable} ({units[variable]}) Region: {region}')
 
     if variable == 'tas': data = data_CORDEX_CMIP5.dropna(axis=0)
     elif variable == 'pr': data = data_CORDEX_CMIP5_relative.dropna(axis=0)
@@ -245,15 +254,17 @@ def picture(data_CMIP5_CMIP5, data_CORDEX_CMIP5, data_CMIP5_CMIP5_relative, data
     col = robustness_IPCC(data_CORDEX_CMIP5.dropna(axis=0), region, 'CORDEX', variable, mask, path_ATLAS, Reg_CORDEX_dom)
     # Add linear fit
     lm = linear_model.LinearRegression()
-    slope, intercept, r_value, p_value, std_err = stats.linregress(data['world'].values,data[region])
     X = data['world'].values.reshape(-1, 1)
     y = data[region]
+    slope, intercept, r_value, p_value, std_err = stats.linregress(data['world'].values,data[region])
+    slope_CORDEX = slope.copy()
+    pvalue_CORDEX = p_value.copy()
     model = lm.fit(X, y)
     ax[1].set_xlim(left=0)
     if p_value<=0.01: sig = '(**)'
     elif (p_value>0.01) and (p_value<=0.05): sig = '(*)'
     else: sig = ''
-    ax[1].text(0.05, 0.92, '$\\beta:$ %.2f %s/\u00b0C%s' % (model.coef_, units[variable], sig), color='k',
+    ax[1].text(0.05, 0.92, '$\\beta:$ %s %s/\u00b0C%s' % (str(np.round(slope,2)), units[variable], sig), color='k',
             verticalalignment='top', horizontalalignment='left', transform=ax[1].transAxes, 
             fontsize=13, fontweight = 'bold', bbox={'facecolor': 'w', 'alpha': 0.5, 'pad': 5}, zorder=50)
     ax[1].plot(X, model.predict(X), color = 'k', linewidth = 2)
@@ -279,14 +290,25 @@ def picture(data_CMIP5_CMIP5, data_CORDEX_CMIP5, data_CMIP5_CMIP5_relative, data
     # Set legend outside the plot
     ax[0].legend(h_sig, ['Conflicting signals', 'No change or no robust signal', 'Robust Signal'],
                  loc='center left', bbox_to_anchor=(2.05, 0.16), ncol=1)
-
-    ax[0].set_xlim([0, 6])
-    ax[1].set_xlim([0, 6])
+    
+    if GWL_limit:
+        ax[0].set_xlim([0, GWL_limit])
+        ax[1].set_xlim([0, GWL_limit])
+    else:
+        ax[0].set_xlim([0, 6])
+        ax[1].set_xlim([0, 6])
     
     ax[0].set_title("CMIP5")
     ax[1].set_title("CORDEX")
     
     plt.subplots_adjust(wspace=0.05)
+    
+    #plt.savefig(dest_figure + 'slope_' + region + '_' + variable +  '_.pdf')
+    
+    if show_figure == False:
+        plt.close()
+    
+    return slope_CMIP5, pvalue_CMIP5, slope_CORDEX, pvalue_CORDEX
 
 def select_GCM_from_CORDEX(data_CMIP5_CMIP5, data_CORDEX_CMIP5):
     """Select those GCM models available in CORDEX dataset"""
@@ -370,7 +392,7 @@ def robustness_IPCC(data, region, project, variable, mask, root, CORDEX_regions)
                 
     return color
 
-def main(root, variable, mask, scenario, region, season, period_PI, period_CP):
+def main(root, variable, mask, scenario, region, season, period_PI, period_CP, GWL_limit, scenario_common, dest, show_figure):
 
     # Mosaic-ensemble approach used in the IPCC-WGI AR6 (Diez-Sierra et al., 2022, see Figure 1 panel b)
     Reg_CORDEX_dom = {'NAM' : ['NWN', 'NEN', 'WNA', 'CNA', 'ENA'],
@@ -382,7 +404,7 @@ def main(root, variable, mask, scenario, region, season, period_PI, period_CP):
                       'ANT' : ['EAN', 'WAN'],
                       'WAS' : ['WCA', 'TIB', 'SAS', 'ARP'],#'ARS', 'BOB', 'EIO'
                       'SEA' : ['SEA'],
-                      'EAS' : ['ECA', 'EAS', 'SAS'],
+                      'EAS' : ['ECA', 'EAS'],
                       'AUS' : ['NAU', 'CAU', 'EAU', 'SAU', 'NZ']}
 
     longname = dict(pr = 'Precipitation', tas = 'Near surface temperature')
@@ -390,15 +412,19 @@ def main(root, variable, mask, scenario, region, season, period_PI, period_CP):
     months = dict(DJF=[1,2,12], MAM=[3,4,5], JJA=[6,7,8], SON=[9,10,11], Annual=range(1,13))
 
     project_gsat = 'CMIP5'
+    
+    dest_figure = dest + variable + '/' + scenario + '/' + season + '/'
+    os.makedirs(dest + variable + '/' + scenario + '/' + season + '/', exist_ok=True)
+
 
     data_CMIP5_CMIP5_relative = GWL_function(root, variable, mask, project_gsat, scenario, region, season, period_PI, period_CP, Reg_CORDEX_dom, months, 
-                                project = 'CMIP5', relative = True)
+                                scenario_common, project = 'CMIP5', relative = True)
     data_CORDEX_CMIP5_relative = GWL_function(root, variable, mask, project_gsat, scenario, region, season, period_PI, period_CP, Reg_CORDEX_dom, months, 
-                                project = 'CORDEX', relative = True)
+                                scenario_common, project = 'CORDEX', relative = True)
     data_CMIP5_CMIP5 = GWL_function(root, variable, mask, project_gsat, scenario, region, season, period_PI, period_CP, Reg_CORDEX_dom, months, 
-                                project = 'CMIP5', relative = False)
+                                scenario_common, project = 'CMIP5', relative = False)
     data_CORDEX_CMIP5 = GWL_function(root, variable, mask, project_gsat, scenario, region, season, period_PI, period_CP, Reg_CORDEX_dom, months, 
-                                project = 'CORDEX', relative = False)
+                                scenario_common, project = 'CORDEX', relative = False)
 
     # selecting commun CORDEX-CMIP5 simulations
     data_CMIP5_CMIP5_relative_common = select_GCM_from_CORDEX(data_CMIP5_CMIP5_relative, data_CORDEX_CMIP5_relative)
@@ -410,11 +436,22 @@ def main(root, variable, mask, scenario, region, season, period_PI, period_CP):
 
     if variable == 'tas': rr_aa = data_CMIP5_CMIP5.copy()
     elif variable == 'pr': rr_aa = data_CMIP5_CMIP5_relative.copy()
+    
+    if GWL_limit:
+        rr_aa = rr_aa[rr_aa['world']<GWL_limit]
+        data_CMIP5_CMIP5_common_weight = data_CMIP5_CMIP5_common_weight[data_CMIP5_CMIP5_common_weight['world']<GWL_limit]
+        data_CORDEX_CMIP5 = data_CORDEX_CMIP5[data_CORDEX_CMIP5['world']<GWL_limit]
+        data_CMIP5_CMIP5_relative_common_weight = data_CMIP5_CMIP5_relative_common_weight[data_CMIP5_CMIP5_relative_common_weight['world']<GWL_limit]
+        data_CORDEX_CMIP5_relative = data_CORDEX_CMIP5_relative[data_CORDEX_CMIP5_relative['world']<GWL_limit]
 
-    picture(data_CMIP5_CMIP5_common_weight, 
-            data_CORDEX_CMIP5, 
-            data_CMIP5_CMIP5_relative_common_weight,
-            data_CORDEX_CMIP5_relative,
-            rr_aa,
-            region, variable, project_gsat, season, mask, root,
-            Reg_CORDEX_dom, units, longname)   
+    
+    slope_CMIP5, pvalue_CMIP5, slope_CORDEX, pvalue_CORDEX = picture(data_CMIP5_CMIP5_common_weight, 
+                                        data_CORDEX_CMIP5, 
+                                        data_CMIP5_CMIP5_relative_common_weight,
+                                        data_CORDEX_CMIP5_relative,
+                                        rr_aa,
+                                        region, variable, project_gsat, season, mask, root,
+                                        Reg_CORDEX_dom, units, longname, GWL_limit, scenario,
+                                        dest_figure, show_figure) 
+    
+    return slope_CMIP5, pvalue_CMIP5, slope_CORDEX, pvalue_CORDEX
